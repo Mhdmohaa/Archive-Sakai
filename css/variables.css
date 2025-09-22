@@ -1,0 +1,14 @@
+/* Variables CSS pour une cohérence des couleurs */
+:root {
+    --primary-dark: #0a0a0a;
+    --secondary-dark: #1a1a1a;
+    --accent-red: #8b0000;
+    --accent-light: #b22222;
+    --text-primary: #f0f0f0;
+    --text-secondary: #cccccc;
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+    --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.3);
+    --shadow-medium: 0 8px 16px rgba(0, 0, 0, 0.4);
+    --shadow-heavy: 0 10px 30px rgba(0, 0, 0, 0.5);
+}

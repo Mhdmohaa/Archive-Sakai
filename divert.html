@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakai - Rapports Divert</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Archives de <span>Sakai</span></div>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="nav-link">Biographie</a></li>
+                    <li><a href="missions.html" class="nav-link">Rapports de Mission</a></li>
+                    <li><a href="divert.html" class="nav-link active">Rapports Divert</a></li>
+                    <li><a href="nouveau-rapport.html" class="nav-link btn-new-report">Nouveau Rapport</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="divert-section active">
+            <div class="page-header">
+                <h1>Rapports Divert</h1>
+                <p class="page-subtitle">Observations sanguinaires des zones et analyses stratégiques</p>
+                <div class="page-stats">
+                    <span class="stat-item">Total: <strong id="total-divert">0</strong> observations</span>
+                    <span class="stat-item">Zones couvertes: <strong id="zones-covered">0</strong></span>
+                </div>
+            </div>
+
+            <div class="divert-intro">
+                <div class="info-card">
+                    <h3>📊 À propos des Rapports Divert</h3>
+                    <p>Ces rapports documentent les observations continues des zones d'intérêt, les analyses stratégiques 
+                       et les phénomènes sanguinaires observés pendant les périodes d'accalmie.</p>
+                </div>
+            </div>
+
+            <div class="divert-grid" id="divert-container">
+                <!-- Les observations seront générées ici par JavaScript -->
+                <div class="no-reports">
+                    <div class="no-reports-icon">🌑</div>
+                    <h3>Aucun rapport divert disponible</h3>
+                    <p>Aucune observation n'a encore été archivée dans le sang</p>
+                    <a href="nouveau-rapport.html" class="btn btn-primary">Créer le premier rapport</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Archives de Sakai</h3>
+                <p>Démon Sanguinaire de l'Ordre des Veilleurs</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="index.html">Biographie</a></li>
+                    <li><a href="missions.html">Rapports de Mission</a></li>
+                    <li><a href="divert.html">Rapports Divert</a></li>
+                    <li><a href="nouveau-rapport.html">Nouveau Rapport</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Confidentialité</h3>
+                <p>⚠️ Documents classés confidentiels</p>
+                <p>Accès strictement réservé aux Veilleurs</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 1923 Archives de Sakai - Tous droits réservés</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
