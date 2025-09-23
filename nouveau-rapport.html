@@ -37,9 +37,8 @@
                         <select id="report-type" required>
                             <option value="">Sélectionner le type...</option>
                             <option value="mission">Rapport de Mission</option>
-                            <option value="divert">Rapport Divert (Observation)</option>
-                            <option value="analysis">Analyse Stratégique</option>
-                            <option value="incident">Incident Sanguinaire</option>
+                            <option value="zone">Rapport sur Zone</option>
+                            <option value="divers">Rapport Divers</option>
                         </select>
                     </div>
                 </div>
@@ -100,25 +99,14 @@ Format recommandé:
                 <!-- Section Classification -->
                 <div class="form-section">
                     <h2>⚡ Classification</h2>
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="report-priority">Priorité</label>
-                            <select id="report-priority">
-                                <option value="low">Basse</option>
-                                <option value="medium" selected>Moyenne</option>
-                                <option value="high">Haute</option>
-                                <option value="critical">Critique</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="report-confidentiality">Niveau de confidentialité</label>
-                            <select id="report-confidentiality">
-                                <option value="standard">Standard</option>
-                                <option value="confidential" selected>Confidentiel</option>
-                                <option value="secret">Secret</option>
-                                <option value="top-secret">Très Secret</option>
-                            </select>
-                        </div>
+                    <div class="form-group">
+                        <label for="report-visibility">Visibilité *</label>
+                        <select id="report-visibility" required>
+                            <option value="standard">Standard</option>
+                            <option value="power">Gerant Pouvoir</option>
+                            <option value="sphere">Gerant Sphere</option>
+                            <option value="moons">Lune</option>
+                        </select>
                     </div>
                 </div>
 
@@ -133,7 +121,7 @@ Format recommandé:
             </form>
 
             <!-- Modal de confirmation -->
-            <div id="confirmation-modal" class="modal">
+            <div id="confirmation-modal" class="modal" style="display: none;">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h3>🩸 Rapport Scellé avec Succès</h3>
@@ -155,7 +143,7 @@ Format recommandé:
         <div class="footer-content">
             <div class="footer-section">
                 <h3>Archives de Sakai</h3>
-                <p>Démon Sanguinaire de l'Ordre des Veilleurs</p>
+                <p>Serviteur de l'ordre démoniaque</p>
             </div>
             <div class="footer-section">
                 <h3>Navigation</h3>
@@ -163,13 +151,12 @@ Format recommandé:
                     <li><a href="index.html">Biographie</a></li>
                     <li><a href="missions.html">Rapports de Mission</a></li>
                     <li><a href="divert.html">Rapports Divert</a></li>
-                    <li><a href="nouveau-rapport.html">Nouveau Rapport</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3>Confidentialité</h3>
                 <p>⚠️ Documents classés confidentiels</p>
-                <p>Accès strictement réservé aux Veilleurs</p>
+                <p>Accès strictement réservé aux Démons</p>
             </div>
         </div>
         <div class="footer-bottom">
