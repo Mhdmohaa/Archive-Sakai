@@ -265,65 +265,81 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Afficher les rapports
-    function displayReports(reports, containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        
-        if (reports.length === 0) {
-            const category = containerId.includes('pouvoir') ? 'Pouvoir' : 'Sphere';
-            container.innerHTML = `
-                <div class="no-reports">
-                    <div class="no-reports-icon">${category === 'Pouvoir' ? '⚡' : '🪐'}</div>
-                    <h3>Aucun rapport ${category} disponible</h3>
-                    <p>Les archives ${category.toLowerCase()} sont actuellement vides</p>
-                    <div class="no-reports-actions">
-                        <a href="nouveau-rapport.html" class="btn btn-primary">Créer un premier rapport</a>
-                    </div>
+function displayReports(reports, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    if (reports.length === 0) {
+        const category = containerId.includes('pouvoir') ? 'Pouvoir' : 'Sphere';
+        container.innerHTML = `
+            <div class="no-reports">
+                <div class="no-reports-icon">${category === 'Pouvoir' ? '⚡' : '🪐'}</div>
+                <h3>Aucun rapport ${category} disponible</h3>
+                <p>Les archives ${category.toLowerCase()} sont actuellement vides</p>
+                <div class="no-reports-actions">
+                    <a href="nouveau-rapport.html" class="btn btn-primary">Créer un premier rapport</a>
                 </div>
-            `;
-        } else {
-            container.innerHTML = reports.map(report => `
-                <div class="report-card ${report.category}-card">
-                    <div class="report-header">
-                        <h3>${report.title}</h3>
-                        <span class="report-type-badge">${getSubcategoryLabel(report.subcategory)}</span>
-                    </div>
-                    <div class="report-meta">
-                        <span class="report-date">${new Date(report.date).toLocaleDateString('fr-FR')}</span>
-                        <span class="report-location">${report.location || 'Non spécifié'}</span>
-                    </div>
-                    <div class="report-category-info">
-                        <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
-                    </div>
-                    ${report.images && report.images.length > 0 ? `
-    <div class="report-media">
-        <strong>🖼️ Images:</strong> ${report.images.length} image(s)
-        <div class="image-previews">
-            ${report.images.slice(0, 3).map(image => `
-                <img src="${image.data}" alt="${image.originalName}" class="image-preview">
-            `).join('')}
-            ${report.images.length > 3 ? `<span>+ ${report.images.length - 3} autres</span>` : ''}
-        </div>
-    </div>
-` : ''}
-                    <div class="report-content">
-                        ${report.objective ? `<p class="report-objective"><strong>Objectif:</strong> ${report.objective}</p>` : ''}
-                        <p>${report.content.substring(0, 120)}...</p>
-                    </div>
-                    <div class="report-footer">
-                        <span class="report-status">Statut: ${report.status || 'Complété'}</span>
-                        <div class="report-actions">
-                            <button onclick="viewReport(${report.id})" class="btn-view">📖 Voir</button>
-                            <button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>
-                            ${report.mediaPaths && report.mediaPaths.length > 0 ? `
-                                <button onclick="viewMedia(${report.id})" class="btn-media">🖼️ Médias</button>
-                            ` : ''}
+            </div>
+        `;
+    } else {
+        container.innerHTML = reports.map(report => `
+            <div class="report-card ${report.category}-card">
+                <div class="report-header">
+                    <h3>${report.title}</h3>
+                    <span class="report-type-badge">${getSubcategoryLabel(report.subcategory)}</span>
+                </div>
+                <div class="report-meta">
+                    <span class="report-date">${new Date(report.date).toLocaleDateString('fr-FR')}</span>
+                    <span class="report-location">${report.location || 'Non spécifié'}</span>
+                </div>
+                <div class="report-category-info">
+                    <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
+                </div>
+                
+                ${report.imageFiles && report.imageFiles.length > 0 ? `
+                    <div class="report-media">
+                        <strong>🖼️ Images référencées:</strong> ${report.imageFiles.length} image(s)
+                        <div class="image-references">
+                            ${report.imageFiles.map(img => `
+                                <div class="image-reference">
+                                    <span class="image-name">${img.originalName}</span>
+                                    <small class="image-info">${img.type} - ${Math.round(img.size / 1024)} KB</small>
+                                </div>
+                            `).join('')}
                         </div>
                     </div>
+                ` : ''}
+                
+                ${report.images && report.images.length > 0 ? `
+                    <div class="report-media">
+                        <strong>🖼️ Images intégrées:</strong> ${report.images.length} image(s)
+                        <div class="image-previews">
+                            ${report.images.slice(0, 3).map(image => `
+                                <img src="${image.data}" alt="${image.originalName}" class="image-preview">
+                            `).join('')}
+                            ${report.images.length > 3 ? `<span>+ ${report.images.length - 3} autres</span>` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="report-content">
+                    ${report.objective ? `<p class="report-objective"><strong>Objectif:</strong> ${report.objective}</p>` : ''}
+                    <p>${report.content.substring(0, 120)}...</p>
                 </div>
-            `).join('');
-        }
+                <div class="report-footer">
+                    <span class="report-status">Statut: ${report.status || 'Complété'}</span>
+                    <div class="report-actions">
+                        <button onclick="viewReport(${report.id})" class="btn-view">📖 Voir</button>
+                        <button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>
+                        ${(report.images && report.images.length > 0) || (report.imageFiles && report.imageFiles.length > 0) ? `
+                            <button onclick="viewMedia(${report.id})" class="btn-media">🖼️ Médias</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `).join('');
     }
+}
     
     // Chargement des rapports
     function loadReports() {

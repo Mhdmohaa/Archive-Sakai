@@ -929,7 +929,65 @@ footer {
     .pouvoir-grid, .sphere-grid {
         grid-template-columns: 1fr;
     }
+    /* Ajoutez ces styles à la fin de votre style.css */
+
+.image-references {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
 }
+
+.image-reference {
+    padding: 0.3rem 0.5rem;
+    background: rgba(139, 0, 0, 0.1);
+    border-radius: 3px;
+    border-left: 2px solid #8b0000;
+    font-size: 0.9rem;
+}
+
+.image-name {
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.image-info {
+    color: #888;
+    font-size: 0.8rem;
+    margin-left: 0.5rem;
+}
+
+/* Styles pour les prévisualisations d'images */
+.image-previews {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.image-preview {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid #8b0000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.image-preview:hover {
+    transform: scale(1.1);
+}
+
+.report-media {
+    padding: 0.5rem;
+    background: rgba(139, 0, 0, 0.1);
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border-left: 3px solid #8b0000;
+}
+}
+
 
 /* Animations */
 .page-header, .filters-section, .info-card, .form-section {

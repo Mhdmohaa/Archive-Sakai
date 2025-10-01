@@ -64,9 +64,14 @@ class ImageManager {
 
     // Générer un nom d'image unique
     generateImageName(originalName, reportId, index) {
-        const extension = originalName.split('.').pop();
-        const timestamp = new Date().getTime();
-        return `report_${reportId}_${index}_${timestamp}.${extension}`;
+        const extension = originalName.split('.').pop().toLowerCase();
+        const cleanName = originalName.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, "_");
+        return `report_${reportId}_${index}_${cleanName}.${extension}`;
+    }
+
+    // Obtenir le chemin d'accès de l'image
+    getImagePath(imageName) {
+        return `images/${imageName}`;
     }
 
     // Sauvegarder dans localStorage

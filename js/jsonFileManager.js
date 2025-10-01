@@ -1,41 +1,37 @@
-// jsonFileManager.js - Version corrigée
+// jsonFileManager.js - Version GitHub Pages
 class JsonFileManager {
     constructor() {
         this.reports = [];
         this.jsonFile = 'sakai_reports.json';
     }
 
-    // Charger depuis le fichier JSON - VERSION CORRIGÉE
     async loadAllReports() {
         try {
-            console.log('📁 Chargement du fichier JSON...');
+            console.log('📁 Tentative de chargement depuis GitHub Pages...');
             
+            // Essayer de charger depuis le fichier JSON
             const response = await fetch(this.jsonFile);
             
             if (response.ok) {
                 const data = await response.json();
                 
-                // VÉRIFICATION IMPORTANTE : seulement si le fichier a des rapports
                 if (data.reports && Array.isArray(data.reports) && data.reports.length > 0) {
                     this.reports = data.reports;
                     console.log(`✅ ${this.reports.length} rapports chargés depuis ${this.jsonFile}`);
                     
-                    // Pour chaque rapport, charger ses images depuis localStorage
+                    // Charger les images depuis localStorage
                     this.reports.forEach(report => {
                         report.images = imageManager.getReportImages(report.id);
                     });
                     
                     this.saveToLocalStorage(data);
-                } else {
-                    // Fichier existe mais vide ou invalide - charger du cache
-                    console.log('📁 Fichier JSON vide ou invalide, chargement du cache...');
-                    await this.loadFromLocalStorage();
+                    return this.reports;
                 }
-            } else {
-                // Fichier n'existe pas - charger du cache
-                console.log('📁 Fichier JSON non trouvé, chargement du cache...');
-                await this.loadFromLocalStorage();
             }
+            
+            // Si le fichier JSON n'est pas disponible, charger depuis localStorage
+            console.log('📁 Fichier JSON non disponible, chargement du cache...');
+            await this.loadFromLocalStorage();
             
         } catch (error) {
             console.log('❌ Erreur chargement fichier, utilisation du cache:', error);
@@ -45,7 +41,6 @@ class JsonFileManager {
         return this.reports;
     }
 
-    // Le reste du code reste identique...
     async loadFromLocalStorage() {
         try {
             const saved = localStorage.getItem('sakai_reports');
@@ -53,7 +48,6 @@ class JsonFileManager {
                 const data = JSON.parse(saved);
                 this.reports = data.reports || [];
                 
-                // Charger les images pour chaque rapport
                 this.reports.forEach(report => {
                     report.images = imageManager.getReportImages(report.id);
                 });
@@ -69,14 +63,18 @@ class JsonFileManager {
         }
     }
 
-    // Les autres méthodes restent identiques...
     saveToLocalStorage(data = null) {
         const dataToSave = data || {
             lastUpdated: new Date().toISOString(),
             totalReports: this.reports.length,
             reports: this.reports.map(report => {
-                // Ne pas sauvegarder les données images dans le JSON principal
-                const { images, ...reportWithoutImages } = report;
+                const { images, mediaFiles, ...reportWithoutImages } = report;
+                
+                // Garder imageFiles pour la référence
+                if (report.imageFiles) {
+                    reportWithoutImages.imageFiles = report.imageFiles;
+                }
+                
                 return reportWithoutImages;
             })
         };
@@ -93,25 +91,34 @@ class JsonFileManager {
                 ...reportData,
                 savedAt: new Date().toISOString(),
                 visibility: reportData.visibility || 'all',
-                images: [] // Initialiser le tableau d'images
+                images: [] // Pour les données base64 (affichage)
             };
 
             // Sauvegarder les images si présentes
             if (reportData.mediaFiles && reportData.mediaFiles.length > 0) {
                 console.log('🖼️ Sauvegarde des images...');
-                reportToSave.images = await imageManager.saveReportImages(reportData, reportId);
+                const savedImages = await imageManager.saveReportImages(reportData, reportId);
+                reportToSave.images = savedImages; // Pour l'affichage immédiat
+                
+                // Ajouter les noms de fichiers pour le JSON (pour votre référence manuelle)
+                reportToSave.imageFiles = savedImages.map(img => ({
+                    fileName: img.fileName,
+                    originalName: img.originalName,
+                    type: img.type,
+                    size: img.size
+                }));
             }
 
             // Ajouter le nouveau rapport
             this.reports.unshift(reportToSave);
 
-            // Télécharger le nouveau fichier JSON
+            // Télécharger le nouveau fichier JSON avec les infos images
             this.downloadUpdatedFile();
 
             return {
                 success: true,
                 report: reportToSave,
-                message: 'Rapport sauvegardé! Fichier JSON téléchargé.'
+                message: 'Rapport sauvegardé! Fichier JSON téléchargé avec les références images.'
             };
 
         } catch (error) {
@@ -125,9 +132,15 @@ class JsonFileManager {
             lastUpdated: new Date().toISOString(),
             totalReports: this.reports.length,
             reports: this.reports.map(report => {
-                // Ne pas inclure les données images dans le JSON téléchargé
-                const { images, ...reportWithoutImages } = report;
-                return reportWithoutImages;
+                // Inclure les infos des fichiers images dans le JSON téléchargé
+                const { images, mediaFiles, ...reportForDownload } = report;
+                
+                // Garder imageFiles pour votre référence
+                if (report.imageFiles) {
+                    reportForDownload.imageFiles = report.imageFiles;
+                }
+                
+                return reportForDownload;
             })
         };
 
@@ -143,7 +156,7 @@ class JsonFileManager {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        console.log('✅ Nouveau fichier JSON téléchargé!');
+        console.log('✅ Nouveau fichier JSON téléchargé avec références images!');
         
         // Sauvegarder aussi dans localStorage
         this.saveToLocalStorage(data);
