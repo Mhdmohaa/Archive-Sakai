@@ -1,8 +1,9 @@
 // Navigation et fonctionnalités principales
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('Archives de Sakai - Chargement terminé');
     
-    // Les rapports sont déjà chargés automatiquement par simpleManager
+    // Charger les rapports depuis le fichier JSON
+    await jsonFileManager.loadAllReports();
     
     // Gestion de la navigation active
     function setActiveNavLink() {
@@ -91,10 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 try {
                     // Sauvegarder le rapport
-                    const result = await simpleManager.saveReport(reportData);
+                    const result = await jsonFileManager.saveReport(reportData);
                     
                     if (result.success) {
-                        showNotification('Rapport scellé dans le sang! Fichier téléchargé.', 'success');
+                        showNotification('Rapport scellé dans le sang! Fichier JSON téléchargé.', 'success');
                         
                         // Afficher le modal de confirmation
                         const modal = document.getElementById('confirmation-modal');
@@ -170,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateStats() {
         // Statistiques pour pouvoir.html
         if (window.location.pathname.includes('pouvoir.html')) {
-            const pouvoirReports = simpleManager.getReportsByCategory('pouvoir');
+            const pouvoirReports = jsonFileManager.getReportsByCategory('pouvoir');
             
             const totalPouvoir = document.getElementById('total-pouvoir');
             const lastUpdatePouvoir = document.getElementById('last-update-pouvoir');
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Statistiques pour sphere.html
         if (window.location.pathname.includes('sphere.html')) {
-            const sphereReports = simpleManager.getReportsByCategory('sphere');
+            const sphereReports = jsonFileManager.getReportsByCategory('sphere');
             
             const totalSphere = document.getElementById('total-sphere');
             const lastUpdateSphere = document.getElementById('last-update-sphere');
@@ -225,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        let pouvoirReports = simpleManager.getReportsByCategory('pouvoir');
+        let pouvoirReports = jsonFileManager.getReportsByCategory('pouvoir');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -248,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        let sphereReports = simpleManager.getReportsByCategory('sphere');
+        let sphereReports = jsonFileManager.getReportsByCategory('sphere');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -294,11 +295,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="report-category-info">
                         <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
                     </div>
-                    ${report.mediaPaths && report.mediaPaths.length > 0 ? `
-                        <div class="report-media">
-                            <strong>📎 Médias:</strong> ${report.mediaPaths.length} fichier(s)
-                        </div>
-                    ` : ''}
+                    ${report.images && report.images.length > 0 ? `
+    <div class="report-media">
+        <strong>🖼️ Images:</strong> ${report.images.length} image(s)
+        <div class="image-previews">
+            ${report.images.slice(0, 3).map(image => `
+                <img src="${image.data}" alt="${image.originalName}" class="image-preview">
+            `).join('')}
+            ${report.images.length > 3 ? `<span>+ ${report.images.length - 3} autres</span>` : ''}
+        </div>
+    </div>
+` : ''}
                     <div class="report-content">
                         ${report.objective ? `<p class="report-objective"><strong>Objectif:</strong> ${report.objective}</p>` : ''}
                         <p>${report.content.substring(0, 120)}...</p>
@@ -385,7 +392,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions globales
     window.viewReport = function(reportId) {
-        const report = simpleManager.getReport(reportId);
+        const report = jsonFileManager.getReport(reportId);
         
         if (report) {
             let content = `Rapport: ${report.title}\n\n`;
@@ -405,12 +412,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 content += `\n\nNotes supplémentaires:\n${report.notes}`;
             }
             
-            if (report.mediaPaths && report.mediaPaths.length > 0) {
-                content += `\n\n📎 Médias (${report.mediaPaths.length} fichier(s)):\n`;
-                report.mediaPaths.forEach(media => {
-                    content += `- ${media.originalName} (${media.type})\n`;
-                });
-            }
+            if (report.images && report.images.length > 0) {
+    content += `\n\n🖼️ Images (${report.images.length} image(s)):\n`;
+    report.images.forEach(image => {
+        content += `- ${image.originalName} (${image.type})\n`;
+    });
+}
             
             // Créer une fenêtre modale pour afficher le rapport
             const modal = document.createElement('div');
@@ -465,94 +472,85 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.viewMedia = function(reportId) {
-        const report = simpleManager.getReport(reportId);
+    const report = jsonFileManager.getReport(reportId);
+    
+    if (report && report.images && report.images.length > 0) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        `;
         
-        if (report && report.mediaPaths && report.mediaPaths.length > 0) {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.9);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 10000;
-            `;
-            
-            const modalContent = document.createElement('div');
-            modalContent.className = 'modal-content';
-            modalContent.style.cssText = `
-                background: #1a1a1a;
-                padding: 2rem;
-                border-radius: 10px;
-                border: 2px solid #8b0000;
-                max-width: 90vw;
-                max-height: 90vh;
-                overflow-y: auto;
-                color: white;
-            `;
-            
-            let mediaContent = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h3 style="color: #ff6b6b; margin: 0;">🖼️ Médias du Rapport</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    <strong>Rapport:</strong> ${report.title}
-                </div>
-            `;
-            
-            report.mediaPaths.forEach(media => {
-                const mediaData = localStorage.getItem(`media_${media.savedPath}`);
-                if (mediaData) {
-                    const mediaObj = JSON.parse(mediaData);
-                    if (mediaObj.data) {
-                        if (media.type.startsWith('image/')) {
-                            mediaContent += `
-                                <div style="margin-bottom: 2rem; text-align: center;">
-                                    <h4 style="color: #ff6b6b; margin-bottom: 0.5rem;">${media.originalName}</h4>
-                                    <img src="${mediaObj.data}" style="max-width: 100%; max-height: 400px; border: 1px solid #8b0000; border-radius: 5px;">
-                                </div>
-                            `;
-                        } else {
-                            mediaContent += `
-                                <div style="margin-bottom: 1rem; padding: 1rem; background: #2d2d2d; border-radius: 5px;">
-                                    <h4 style="color: #ff6b6b; margin: 0 0 0.5rem 0;">${media.originalName}</h4>
-                                    <p style="margin: 0; color: #ccc;">Type: ${media.type} | Taille: ${Math.round(media.size / 1024)} KB</p>
-                                    <p style="margin: 0.5rem 0 0 0;"><a href="${mediaObj.data}" download="${media.originalName}" style="color: #ff6b6b; text-decoration: none;">📥 Télécharger</a></p>
-                                </div>
-                            `;
-                        }
-                    }
-                }
-            });
-            
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content';
+        modalContent.style.cssText = `
+            background: #1a1a1a;
+            padding: 2rem;
+            border-radius: 10px;
+            border: 2px solid #8b0000;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            color: white;
+        `;
+        
+        let mediaContent = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="color: #ff6b6b; margin: 0;">🖼️ Images du Rapport</h3>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <strong>Rapport:</strong> ${report.title}
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+        `;
+        
+        report.images.forEach(image => {
             mediaContent += `
-                <div style="margin-top: 1rem; text-align: center;">
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 0.5rem 1rem; background: #8b0000; color: white; border: none; border-radius: 5px; cursor: pointer;">Fermer</button>
+                <div style="text-align: center;">
+                    <img src="${image.data}" 
+                         alt="${image.originalName}" 
+                         style="max-width: 100%; max-height: 200px; border: 1px solid #8b0000; border-radius: 5px; margin-bottom: 0.5rem;">
+                    <div style="font-size: 0.8rem; color: #ccc;">
+                        ${image.originalName}<br>
+                        ${Math.round(image.size / 1024)} KB
+                    </div>
                 </div>
             `;
-            
-            modalContent.innerHTML = mediaContent;
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
-            
-            // Fermer en cliquant à l'extérieur
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
-        }
-    };
+        });
+        
+        mediaContent += `
+            </div>
+            <div style="margin-top: 1rem; text-align: center;">
+                <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 0.5rem 1rem; background: #8b0000; color: white; border: none; border-radius: 5px; cursor: pointer;">Fermer</button>
+            </div>
+        `;
+        
+        modalContent.innerHTML = mediaContent;
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Fermer en cliquant à l'extérieur
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+};
     
     window.deleteReport = async function(reportId) {
         if (confirm('Supprimer ce rapport définitivement?')) {
-            const result = await simpleManager.deleteReport(reportId);
+            const result = await jsonFileManager.deleteReport(reportId);
             if (result.success) {
                 loadReports();
                 showNotification('Rapport supprimé', 'success');
@@ -564,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Actualiser les rapports
     window.refreshReports = async function() {
-        const result = await simpleManager.refreshReports();
+        const result = await jsonFileManager.refreshReports();
         loadReports();
         showNotification(`Rapports actualisés (${result.count} rapports)`, 'success');
     };
@@ -902,7 +900,34 @@ style.textContent = `
         margin-top: 2rem;
         flex-wrap: wrap;
     }
-    
+    .image-previews {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.image-preview {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border: 1px solid #8b0000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.image-preview:hover {
+    transform: scale(1.1);
+}
+
+.report-media {
+    padding: 0.5rem;
+    background: rgba(139, 0, 0, 0.1);
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    border-left: 3px solid #8b0000;
+}
     @keyframes slideIn {
         from {
             transform: translateX(100%);
