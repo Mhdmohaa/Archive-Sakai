@@ -2,6 +2,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Archives de Sakai - Chargement terminé');
     
+    // Les rapports sont déjà chargés automatiquement par simpleManager
+    
     // Gestion de la navigation active
     function setActiveNavLink() {
         const currentPage = window.location.pathname.split('/').pop();
@@ -89,16 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 try {
                     // Sauvegarder le rapport
-                    const result = await reportSaver.saveReport(reportData);
+                    const result = await simpleManager.saveReport(reportData);
                     
                     if (result.success) {
-                        showNotification('Rapport scellé dans le sang avec succès! Fichier JSON téléchargé.', 'success');
-                        
-                        // Afficher le chemin du fichier sauvegardé
-                        const savedFilePath = document.getElementById('saved-file-path');
-                        if (savedFilePath) {
-                            savedFilePath.textContent = result.filePath;
-                        }
+                        showNotification('Rapport scellé dans le sang! Fichier téléchargé.', 'success');
                         
                         // Afficher le modal de confirmation
                         const modal = document.getElementById('confirmation-modal');
@@ -153,25 +149,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const draftBtn = document.getElementById('btn-draft');
             if (draftBtn) {
                 draftBtn.addEventListener('click', function() {
-                    const reportData = {
-                        category: document.getElementById('report-category').value,
-                        subcategory: document.getElementById('report-subcategory').value,
-                        title: document.getElementById('report-title').value,
-                        date: document.getElementById('report-date').value,
-                        content: document.getElementById('report-content').value,
-                        location: document.getElementById('report-location').value,
-                        objective: document.getElementById('report-objective').value,
-                        visibility: document.getElementById('report-visibility').value || 'all',
-                        notes: document.getElementById('report-notes').value,
-                        status: 'brouillon',
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    const drafts = JSON.parse(localStorage.getItem('sakai_drafts') || '[]');
-                    reportData.draftId = Date.now();
-                    drafts.push(reportData);
-                    localStorage.setItem('sakai_drafts', JSON.stringify(drafts));
-                    
                     showNotification('Brouillon sauvegardé localement', 'success');
                 });
             }
@@ -193,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateStats() {
         // Statistiques pour pouvoir.html
         if (window.location.pathname.includes('pouvoir.html')) {
-            const pouvoirReports = reportSaver.getReportsByCategory('pouvoir');
+            const pouvoirReports = simpleManager.getReportsByCategory('pouvoir');
             
             const totalPouvoir = document.getElementById('total-pouvoir');
             const lastUpdatePouvoir = document.getElementById('last-update-pouvoir');
@@ -207,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Statistiques pour sphere.html
         if (window.location.pathname.includes('sphere.html')) {
-            const sphereReports = reportSaver.getReportsByCategory('sphere');
+            const sphereReports = simpleManager.getReportsByCategory('sphere');
             
             const totalSphere = document.getElementById('total-sphere');
             const lastUpdateSphere = document.getElementById('last-update-sphere');
@@ -248,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        let pouvoirReports = reportSaver.getReportsByCategory('pouvoir');
+        let pouvoirReports = simpleManager.getReportsByCategory('pouvoir');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -271,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        let sphereReports = reportSaver.getReportsByCategory('sphere');
+        let sphereReports = simpleManager.getReportsByCategory('sphere');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -408,7 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions globales
     window.viewReport = function(reportId) {
-        const report = reportSaver.getReport(reportId);
+        const report = simpleManager.getReport(reportId);
         
         if (report) {
             let content = `Rapport: ${report.title}\n\n`;
@@ -488,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.viewMedia = function(reportId) {
-        const report = reportSaver.getReport(reportId);
+        const report = simpleManager.getReport(reportId);
         
         if (report && report.mediaPaths && report.mediaPaths.length > 0) {
             const modal = document.createElement('div');
@@ -575,7 +552,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.deleteReport = async function(reportId) {
         if (confirm('Supprimer ce rapport définitivement?')) {
-            const result = await reportSaver.deleteReport(reportId);
+            const result = await simpleManager.deleteReport(reportId);
             if (result.success) {
                 loadReports();
                 showNotification('Rapport supprimé', 'success');
@@ -585,15 +562,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
     
-    // Export des rapports
-    window.exportReports = function() {
-        reportSaver.exportAllReports();
-        showNotification('Tous les rapports ont été exportés avec succès!', 'success');
-    };
-    
     // Actualiser les rapports
-    window.refreshReports = function() {
-        const result = reportSaver.refreshReports();
+    window.refreshReports = async function() {
+        const result = await simpleManager.refreshReports();
         loadReports();
         showNotification(`Rapports actualisés (${result.count} rapports)`, 'success');
     };
