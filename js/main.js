@@ -51,11 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const content = document.getElementById('report-content').value;
                 const location = document.getElementById('report-location').value;
                 const objective = document.getElementById('report-objective').value;
-                const visibility = document.getElementById('report-visibility').value || 'all'; // Par défaut "all"
+                const visibility = document.getElementById('report-visibility').value || 'all';
                 const evidenceInput = document.getElementById('report-evidence');
                 const notes = document.getElementById('report-notes').value;
                 
-                // Validation (visibilité n'est plus obligatoire)
+                // Validation
                 if (!category || !subcategory || !title || !date || !content || !location) {
                     showNotification('Veuillez remplir tous les champs obligatoires.', 'error');
                     return;
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const result = await reportSaver.saveReport(reportData);
                     
                     if (result.success) {
-                        showNotification('Rapport scellé dans le sang avec succès!', 'success');
+                        showNotification('Rapport scellé dans le sang avec succès! Fichier JSON téléchargé.', 'success');
                         
                         // Afficher le chemin du fichier sauvegardé
                         const savedFilePath = document.getElementById('saved-file-path');
@@ -153,7 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const draftBtn = document.getElementById('btn-draft');
             if (draftBtn) {
                 draftBtn.addEventListener('click', function() {
-                    // Sauvegarder en tant que brouillon
                     const reportData = {
                         category: document.getElementById('report-category').value,
                         subcategory: document.getElementById('report-subcategory').value,
@@ -168,7 +167,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         timestamp: new Date().toISOString()
                     };
                     
-                    // Sauvegarder le brouillon dans localStorage
                     const drafts = JSON.parse(localStorage.getItem('sakai_drafts') || '[]');
                     reportData.draftId = Date.now();
                     drafts.push(reportData);
@@ -193,11 +191,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mise à jour des statistiques
     function updateStats() {
-        const reports = reportSaver.loadAllReports();
-        
         // Statistiques pour pouvoir.html
         if (window.location.pathname.includes('pouvoir.html')) {
-            const pouvoirReports = reports.filter(r => r.category === 'pouvoir');
+            const pouvoirReports = reportSaver.getReportsByCategory('pouvoir');
             
             const totalPouvoir = document.getElementById('total-pouvoir');
             const lastUpdatePouvoir = document.getElementById('last-update-pouvoir');
@@ -211,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Statistiques pour sphere.html
         if (window.location.pathname.includes('sphere.html')) {
-            const sphereReports = reports.filter(r => r.category === 'sphere');
+            const sphereReports = reportSaver.getReportsByCategory('sphere');
             
             const totalSphere = document.getElementById('total-sphere');
             const lastUpdateSphere = document.getElementById('last-update-sphere');
@@ -252,8 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        const reports = reportSaver.loadAllReports();
-        let pouvoirReports = reports.filter(r => r.category === 'pouvoir');
+        let pouvoirReports = reportSaver.getReportsByCategory('pouvoir');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -276,8 +271,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        const reports = reportSaver.loadAllReports();
-        let sphereReports = reports.filter(r => r.category === 'sphere');
+        let sphereReports = reportSaver.getReportsByCategory('sphere');
         
         // Appliquer les filtres
         if (selectedSubcategory !== 'all') {
@@ -304,6 +298,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="no-reports-icon">${category === 'Pouvoir' ? '⚡' : '🪐'}</div>
                     <h3>Aucun rapport ${category} disponible</h3>
                     <p>Les archives ${category.toLowerCase()} sont actuellement vides</p>
+                    <div class="no-reports-actions">
+                        <a href="nouveau-rapport.html" class="btn btn-primary">Créer un premier rapport</a>
+                    </div>
                 </div>
             `;
         } else {
@@ -411,7 +408,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions globales
     window.viewReport = function(reportId) {
-        const report = reportSaver.loadReport(reportId);
+        const report = reportSaver.getReport(reportId);
         
         if (report) {
             let content = `Rapport: ${report.title}\n\n`;
@@ -491,7 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.viewMedia = function(reportId) {
-        const report = reportSaver.loadReport(reportId);
+        const report = reportSaver.getReport(reportId);
         
         if (report && report.mediaPaths && report.mediaPaths.length > 0) {
             const modal = document.createElement('div');
@@ -594,6 +591,13 @@ document.addEventListener('DOMContentLoaded', function() {
         showNotification('Tous les rapports ont été exportés avec succès!', 'success');
     };
     
+    // Actualiser les rapports
+    window.refreshReports = function() {
+        const result = reportSaver.refreshReports();
+        loadReports();
+        showNotification(`Rapports actualisés (${result.count} rapports)`, 'success');
+    };
+    
     // Initialisation
     setActiveNavLink();
     animateOnScroll();
@@ -632,6 +636,10 @@ style.textContent = `
         color: #888;
         font-size: 1rem;
         margin-bottom: 0;
+    }
+    
+    .no-reports-actions {
+        margin-top: 2rem;
     }
     
     .report-card {
@@ -853,11 +861,60 @@ style.textContent = `
         border-left: 3px solid #8b0000;
     }
     
+    .file-saved-info p {
+        margin: 0.5rem 0;
+    }
+    
+    .download-info {
+        background: rgba(45, 90, 39, 0.2);
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+        border-left: 3px solid #2d5a27;
+    }
+    
+    .download-info p {
+        margin: 0.5rem 0;
+        color: #aaffaa;
+    }
+    
+    .next-steps {
+        background: rgba(90, 77, 39, 0.2);
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+        border-left: 3px solid #5a4d27;
+    }
+    
+    .next-steps h4 {
+        color: #ffd700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .next-steps ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+    
+    .next-steps li {
+        margin: 0.3rem 0;
+        color: #ffd700;
+    }
+    
+    .next-steps code {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+        font-family: monospace;
+        color: #ff6b6b;
+    }
+    
     .modal-actions {
         display: flex;
         gap: 1rem;
         margin-top: 1.5rem;
         justify-content: center;
+        flex-wrap: wrap;
     }
     
     .pouvoir-grid, .sphere-grid {
