@@ -1,11 +1,11 @@
-// jsonFileManager.js - Lit le fichier JSON directement avec gestion des images
+// jsonFileManager.js - Version corrigée
 class JsonFileManager {
     constructor() {
         this.reports = [];
         this.jsonFile = 'sakai_reports.json';
     }
 
-    // Charger depuis le fichier JSON
+    // Charger depuis le fichier JSON - VERSION CORRIGÉE
     async loadAllReports() {
         try {
             console.log('📁 Chargement du fichier JSON...');
@@ -14,16 +14,25 @@ class JsonFileManager {
             
             if (response.ok) {
                 const data = await response.json();
-                this.reports = data.reports || [];
-                console.log(`✅ ${this.reports.length} rapports chargés depuis ${this.jsonFile}`);
                 
-                // Pour chaque rapport, charger ses images depuis localStorage
-                this.reports.forEach(report => {
-                    report.images = imageManager.getReportImages(report.id);
-                });
-                
-                this.saveToLocalStorage(data);
+                // VÉRIFICATION IMPORTANTE : seulement si le fichier a des rapports
+                if (data.reports && Array.isArray(data.reports) && data.reports.length > 0) {
+                    this.reports = data.reports;
+                    console.log(`✅ ${this.reports.length} rapports chargés depuis ${this.jsonFile}`);
+                    
+                    // Pour chaque rapport, charger ses images depuis localStorage
+                    this.reports.forEach(report => {
+                        report.images = imageManager.getReportImages(report.id);
+                    });
+                    
+                    this.saveToLocalStorage(data);
+                } else {
+                    // Fichier existe mais vide ou invalide - charger du cache
+                    console.log('📁 Fichier JSON vide ou invalide, chargement du cache...');
+                    await this.loadFromLocalStorage();
+                }
             } else {
+                // Fichier n'existe pas - charger du cache
                 console.log('📁 Fichier JSON non trouvé, chargement du cache...');
                 await this.loadFromLocalStorage();
             }
@@ -36,7 +45,7 @@ class JsonFileManager {
         return this.reports;
     }
 
-    // Charger depuis localStorage (fallback)
+    // Le reste du code reste identique...
     async loadFromLocalStorage() {
         try {
             const saved = localStorage.getItem('sakai_reports');
@@ -50,6 +59,9 @@ class JsonFileManager {
                 });
                 
                 console.log(`📱 ${this.reports.length} rapports chargés depuis le cache`);
+            } else {
+                console.log('📱 Aucun rapport dans le cache');
+                this.reports = [];
             }
         } catch (error) {
             console.error('Erreur chargement cache:', error);
@@ -57,7 +69,7 @@ class JsonFileManager {
         }
     }
 
-    // Sauvegarder dans localStorage
+    // Les autres méthodes restent identiques...
     saveToLocalStorage(data = null) {
         const dataToSave = data || {
             lastUpdated: new Date().toISOString(),
@@ -71,7 +83,6 @@ class JsonFileManager {
         localStorage.setItem('sakai_reports', JSON.stringify(dataToSave));
     }
 
-    // Sauvegarder un rapport (télécharge le nouveau JSON)
     async saveReport(reportData) {
         try {
             console.log('🔄 Création du rapport...');
@@ -109,7 +120,6 @@ class JsonFileManager {
         }
     }
 
-    // Télécharger le fichier JSON mis à jour
     downloadUpdatedFile() {
         const data = {
             lastUpdated: new Date().toISOString(),
@@ -139,22 +149,18 @@ class JsonFileManager {
         this.saveToLocalStorage(data);
     }
 
-    // Obtenir tous les rapports
     getAllReports() {
         return this.reports;
     }
 
-    // Obtenir les rapports par catégorie
     getReportsByCategory(category) {
         return this.reports.filter(report => report.category === category);
     }
 
-    // Obtenir un rapport spécifique
     getReport(reportId) {
         return this.reports.find(report => report.id === parseInt(reportId));
     }
 
-    // Supprimer un rapport
     async deleteReport(reportId) {
         // Supprimer les images du rapport
         imageManager.deleteReportImages(reportId);
@@ -168,7 +174,6 @@ class JsonFileManager {
         return { success: true };
     }
 
-    // Actualiser les rapports
     async refreshReports() {
         await this.loadAllReports();
         return { success: true, count: this.reports.length };
@@ -179,4 +184,4 @@ class JsonFileManager {
 const jsonFileManager = new JsonFileManager();
 window.jsonFileManager = jsonFileManager;
 
-console.log('✅ JsonFileManager chargé!');
+console.log('✅ JsonFileManager corrigé chargé!');
