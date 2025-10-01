@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakai - Rapports Sphere</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Archives de <span>Sakai</span></div>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="nav-link">Biographie</a></li>
+                    <li><a href="pouvoir.html" class="nav-link">Rapport Pouvoir</a></li>
+                    <li><a href="sphere.html" class="nav-link active">Rapport Sphere</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="sphere-section active">
+            <div class="page-header">
+                <h1>Rapports Sphere</h1>
+                <p class="page-subtitle">Archives sanguinaires des opérations - Catégorie Sphere</p>
+                <div class="page-stats">
+                    <span class="stat-item">Total: <strong id="total-sphere">0</strong> rapports</span>
+                    <span class="stat-item">Dernière mise à jour: <strong id="last-update-sphere">--/--/----</strong></span>
+                </div>
+            </div>
+
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label for="sphere-subcategory">Filtrer par Type:</label>
+                    <select id="sphere-subcategory">
+                        <option value="all">Tous les types</option>
+                        <option value="mission">Rapport de Mission</option>
+                        <option value="divert">Rapport Divert</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="sphere-visibility">Filtrer par Visibilité:</label>
+                    <select id="sphere-visibility">
+                        <option value="all">Toutes les visibilités</option>
+                        <option value="all">👁️ Tout le monde</option>
+                        <option value="power">⚡ Gerant Pouvoir</option>
+                        <option value="sphere">🪐 Gerant Sphere</option>
+                        <option value="moons">🌙 Lune</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sphere-intro">
+                <div class="info-card">
+                    <h3>🪐 Rapports de la Catégorie Sphere</h3>
+                    <p>Cette section archive toutes les observations et missions liées aux sphéres, 
+                       parallèlement à la Sphere Veilleur et Scientifique.</p>
+                </div>
+            </div>
+
+            <div class="sphere-grid" id="sphere-container">
+                <!-- Les rapports seront générés ici par JavaScript -->
+                <div class="no-reports">
+                    <div class="no-reports-icon">🪐</div>
+                    <h3>Aucun rapport Sphere disponible</h3>
+                    <p>Les archives des sphéres sont actuellement vides</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Archives de Sakai</h3>
+                <p>Serviteur de l'ordre démoniaque</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="index.html">Biographie</a></li>
+                    <li><a href="pouvoir.html">Rapport Pouvoir</a></li>
+                    <li><a href="sphere.html">Rapport Sphere</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Confidentialité</h3>
+                <p>⚠️ Documents classés confidentiels</p>
+                <p>Accès strictement réservé aux Démons du Sang</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Archives de Sakai - Tous droits réservés</p>
+        </div>
+    </footer>
+
+    <script src="js/imageManager.js"></script>
+    <script src="js/jsonFileManager.js"></script>
+    <script src="js/main.js"></script>>
+</body>
+</html>
