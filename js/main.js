@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     objective: objective,
                     visibility: visibility,
                     notes: notes,
-                    status: 'completed',
+                    status: 'finalisé',
                     timestamp: new Date().toISOString()
                 };
                 
@@ -276,13 +276,14 @@ function displayReports(reports, containerId) {
                 <div class="no-reports-icon">${category === 'Pouvoir' ? '⚡' : '🪐'}</div>
                 <h3>Aucun rapport ${category} disponible</h3>
                 <p>Les archives ${category.toLowerCase()} sont actuellement vides</p>
-                <div class="no-reports-actions">
-                    <a href="nouveau-rapport.html" class="btn btn-primary">Créer un premier rapport</a>
-                </div>
             </div>
         `;
     } else {
-        container.innerHTML = reports.map(report => `
+        container.innerHTML = reports.map(report => {
+            // Vérifier si le rapport vient du JSON (a une propriété savedAt)
+            const isFromJSON = report.savedAt && !report.isLocal;
+            
+            return `
             <div class="report-card ${report.category}-card">
                 <div class="report-header">
                     <h3>${report.title}</h3>
@@ -330,14 +331,14 @@ function displayReports(reports, containerId) {
                     <span class="report-status">Statut: ${report.status || 'Complété'}</span>
                     <div class="report-actions">
                         <button onclick="viewReport(${report.id})" class="btn-view">📖 Voir</button>
-                        <button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>
+                        ${!isFromJSON ? `<button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>` : ''}
                         ${(report.images && report.images.length > 0) || (report.imageFiles && report.imageFiles.length > 0) ? `
                             <button onclick="viewMedia(${report.id})" class="btn-media">🖼️ Médias</button>
                         ` : ''}
                     </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
 }
     
