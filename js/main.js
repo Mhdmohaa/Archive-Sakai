@@ -40,85 +40,112 @@ document.addEventListener('DOMContentLoaded', function() {
     function initReportForm() {
         const reportForm = document.getElementById('new-report-form');
         if (reportForm) {
-            reportForm.addEventListener('submit', function(e) {
+            reportForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 // Récupération des données du formulaire
+                const category = document.getElementById('report-category').value;
+                const subcategory = document.getElementById('report-subcategory').value;
                 const title = document.getElementById('report-title').value;
-                const type = document.getElementById('report-type').value;
                 const date = document.getElementById('report-date').value;
                 const content = document.getElementById('report-content').value;
                 const location = document.getElementById('report-location').value;
                 const objective = document.getElementById('report-objective').value;
-                const visibility = document.getElementById('report-visibility').value;
+                const visibility = document.getElementById('report-visibility').value || 'all'; // Par défaut "all"
+                const evidenceInput = document.getElementById('report-evidence');
+                const notes = document.getElementById('report-notes').value;
                 
-                // Validation
-                if (!title || !type || !date || !content || !location || !visibility) {
+                // Validation (visibilité n'est plus obligatoire)
+                if (!category || !subcategory || !title || !date || !content || !location) {
                     showNotification('Veuillez remplir tous les champs obligatoires.', 'error');
                     return;
                 }
                 
+                // Préparer les données
                 const reportData = {
+                    category: category,
+                    subcategory: subcategory,
                     title: title,
-                    type: type,
                     date: date,
                     content: content,
                     location: location,
                     objective: objective,
                     visibility: visibility,
-                    status: 'completed'
+                    notes: notes,
+                    status: 'completed',
+                    timestamp: new Date().toISOString()
                 };
                 
-                // Enregistrement
-                if (saveReport(reportData)) {
-                    showNotification('Rapport scellé dans le sang avec succès!', 'success');
-                    this.reset();
+                // Gérer les fichiers média
+                if (evidenceInput && evidenceInput.files.length > 0) {
+                    reportData.mediaFiles = Array.from(evidenceInput.files);
+                }
+                
+                // Afficher un indicateur de chargement
+                const submitBtn = document.getElementById('btn-submit');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '🩸 Sauvegarde en cours...';
+                submitBtn.disabled = true;
+                
+                try {
+                    // Sauvegarder le rapport
+                    const result = await reportSaver.saveReport(reportData);
                     
-                    // Remettre la date du jour
-                    const dateInput = document.getElementById('report-date');
-                    if (dateInput) {
-                        const today = new Date().toISOString().split('T')[0];
-                        dateInput.value = today;
-                    }
-                    
-                    // Afficher le modal de confirmation
-                    const modal = document.getElementById('confirmation-modal');
-                    if (modal) {
-                        modal.style.display = 'block';
+                    if (result.success) {
+                        showNotification('Rapport scellé dans le sang avec succès!', 'success');
                         
-                        // Gérer les boutons du modal
-                        document.getElementById('btn-new-report').addEventListener('click', function() {
-                            modal.style.display = 'none';
-                            reportForm.reset();
-                            const dateInput = document.getElementById('report-date');
-                            if (dateInput) {
-                                const today = new Date().toISOString().split('T')[0];
-                                dateInput.value = today;
-                            }
-                        });
+                        // Afficher le chemin du fichier sauvegardé
+                        const savedFilePath = document.getElementById('saved-file-path');
+                        if (savedFilePath) {
+                            savedFilePath.textContent = result.filePath;
+                        }
                         
-                        document.getElementById('btn-view-reports').addEventListener('click', function() {
-                            if (type === 'mission') {
-                                window.location.href = 'missions.html';
-                            } else {
-                                window.location.href = 'divert.html';
-                            }
-                        });
-                        
-                        // Fermer le modal avec la croix
-                        document.querySelector('.modal-close').addEventListener('click', function() {
-                            modal.style.display = 'none';
-                        });
-                        
-                        // Fermer le modal en cliquant à l'extérieur
-                        window.addEventListener('click', function(e) {
-                            if (e.target === modal) {
+                        // Afficher le modal de confirmation
+                        const modal = document.getElementById('confirmation-modal');
+                        if (modal) {
+                            modal.style.display = 'block';
+                            
+                            // Gérer les boutons du modal
+                            document.getElementById('btn-new-report').addEventListener('click', function() {
                                 modal.style.display = 'none';
-                            }
-                        });
+                                reportForm.reset();
+                                setDefaultDate();
+                                submitBtn.innerHTML = originalText;
+                                submitBtn.disabled = false;
+                            });
+                            
+                            document.getElementById('btn-view-reports').addEventListener('click', function() {
+                                if (category === 'pouvoir') {
+                                    window.location.href = 'pouvoir.html';
+                                } else {
+                                    window.location.href = 'sphere.html';
+                                }
+                            });
+                            
+                            // Fermer le modal avec la croix
+                            document.querySelector('.modal-close').addEventListener('click', function() {
+                                modal.style.display = 'none';
+                                submitBtn.innerHTML = originalText;
+                                submitBtn.disabled = false;
+                            });
+                            
+                            // Fermer le modal en cliquant à l'extérieur
+                            window.addEventListener('click', function(e) {
+                                if (e.target === modal) {
+                                    modal.style.display = 'none';
+                                    submitBtn.innerHTML = originalText;
+                                    submitBtn.disabled = false;
+                                }
+                            });
+                        }
+                    } else {
+                        throw new Error(result.error);
                     }
-                } else {
-                    showNotification('Erreur lors de l\'enregistrement', 'error');
+                } catch (error) {
+                    console.error('Erreur sauvegarde:', error);
+                    showNotification('Erreur lors de la sauvegarde: ' + error.message, 'error');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
                 }
             });
             
@@ -126,141 +153,178 @@ document.addEventListener('DOMContentLoaded', function() {
             const draftBtn = document.getElementById('btn-draft');
             if (draftBtn) {
                 draftBtn.addEventListener('click', function() {
+                    // Sauvegarder en tant que brouillon
+                    const reportData = {
+                        category: document.getElementById('report-category').value,
+                        subcategory: document.getElementById('report-subcategory').value,
+                        title: document.getElementById('report-title').value,
+                        date: document.getElementById('report-date').value,
+                        content: document.getElementById('report-content').value,
+                        location: document.getElementById('report-location').value,
+                        objective: document.getElementById('report-objective').value,
+                        visibility: document.getElementById('report-visibility').value || 'all',
+                        notes: document.getElementById('report-notes').value,
+                        status: 'brouillon',
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // Sauvegarder le brouillon dans localStorage
+                    const drafts = JSON.parse(localStorage.getItem('sakai_drafts') || '[]');
+                    reportData.draftId = Date.now();
+                    drafts.push(reportData);
+                    localStorage.setItem('sakai_drafts', JSON.stringify(drafts));
+                    
                     showNotification('Brouillon sauvegardé localement', 'success');
                 });
             }
+            
+            // Définir la date du jour par défaut
+            setDefaultDate();
         }
     }
     
-    // Simulation de sauvegarde
-    function saveReport(reportData) {
-        try {
-            // Récupérer les rapports existants
-            const existingReports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-            
-            // Ajouter le nouveau rapport
-            reportData.id = Date.now();
-            reportData.timestamp = new Date().toISOString();
-            existingReports.push(reportData);
-            
-            // Sauvegarder
-            localStorage.setItem('sakai_reports', JSON.stringify(existingReports));
-            
-            // Mettre à jour les statistiques
-            updateMissionStats();
-            
-            return true;
-        } catch (error) {
-            console.error('Erreur sauvegarde:', error);
-            return false;
+    function setDefaultDate() {
+        const dateInput = document.getElementById('report-date');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
         }
     }
     
-    // Mise à jour des statistiques des missions
-    function updateMissionStats() {
-        // Pour la page missions.html
-        if (window.location.pathname.includes('missions.html')) {
-            const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-            const missionReports = reports.filter(r => r.type === 'mission');
+    // Mise à jour des statistiques
+    function updateStats() {
+        const reports = reportSaver.loadAllReports();
+        
+        // Statistiques pour pouvoir.html
+        if (window.location.pathname.includes('pouvoir.html')) {
+            const pouvoirReports = reports.filter(r => r.category === 'pouvoir');
             
-            const totalMissions = document.getElementById('total-missions');
-            const lastUpdate = document.getElementById('last-update');
+            const totalPouvoir = document.getElementById('total-pouvoir');
+            const lastUpdatePouvoir = document.getElementById('last-update-pouvoir');
             
-            if (totalMissions) {
-                totalMissions.textContent = missionReports.length;
-            }
-            
-            if (lastUpdate && missionReports.length > 0) {
-                const latestReport = missionReports.reduce((latest, report) => {
-                    return new Date(report.timestamp) > new Date(latest.timestamp) ? report : latest;
-                }, missionReports[0]);
-                
-                lastUpdate.textContent = new Date(latestReport.timestamp).toLocaleDateString('fr-FR');
-            } else if (lastUpdate) {
-                lastUpdate.textContent = '--/--/----';
+            if (totalPouvoir) totalPouvoir.textContent = pouvoirReports.length;
+            if (lastUpdatePouvoir) {
+                lastUpdatePouvoir.textContent = pouvoirReports.length > 0 ? 
+                    new Date(pouvoirReports[0].savedAt).toLocaleDateString('fr-FR') : '--/--/----';
             }
         }
         
-        // Pour la page divert.html
-        if (window.location.pathname.includes('divert.html')) {
-            const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-            const divertReports = reports.filter(r => r.type === 'zone' || r.type === 'divers');
+        // Statistiques pour sphere.html
+        if (window.location.pathname.includes('sphere.html')) {
+            const sphereReports = reports.filter(r => r.category === 'sphere');
             
-            const totalDivert = document.getElementById('total-divert');
-            const lastUpdateDivert = document.getElementById('last-update-divert');
+            const totalSphere = document.getElementById('total-sphere');
+            const lastUpdateSphere = document.getElementById('last-update-sphere');
             
-            if (totalDivert) {
-                totalDivert.textContent = divertReports.length;
-            }
-            
-            if (lastUpdateDivert && divertReports.length > 0) {
-                const latestReport = divertReports.reduce((latest, report) => {
-                    return new Date(report.timestamp) > new Date(latest.timestamp) ? report : latest;
-                }, divertReports[0]);
-                
-                lastUpdateDivert.textContent = new Date(latestReport.timestamp).toLocaleDateString('fr-FR');
-            } else if (lastUpdateDivert) {
-                lastUpdateDivert.textContent = '--/--/----';
+            if (totalSphere) totalSphere.textContent = sphereReports.length;
+            if (lastUpdateSphere) {
+                lastUpdateSphere.textContent = sphereReports.length > 0 ? 
+                    new Date(sphereReports[0].savedAt).toLocaleDateString('fr-FR') : '--/--/----';
             }
         }
     }
     
-    // Gestion des filtres pour Divert
-    function initDivertFilters() {
-        const visibilityFilter = document.getElementById('divert-visibility');
-        if (visibilityFilter) {
-            visibilityFilter.addEventListener('change', function() {
-                filterDivertReports();
-            });
-        }
+    // Gestion des filtres pour Pouvoir
+    function initPouvoirFilters() {
+        const subcategoryFilter = document.getElementById('pouvoir-subcategory');
+        const visibilityFilter = document.getElementById('pouvoir-visibility');
+        
+        [subcategoryFilter, visibilityFilter].forEach(filter => {
+            if (filter) filter.addEventListener('change', filterPouvoirReports);
+        });
     }
     
-    // Gestion des filtres pour Missions
-    function initMissionFilters() {
-        const visibilityFilter = document.getElementById('mission-visibility');
-        if (visibilityFilter) {
-            visibilityFilter.addEventListener('change', function() {
-                filterMissionReports();
-            });
-        }
+    // Gestion des filtres pour Sphere
+    function initSphereFilters() {
+        const subcategoryFilter = document.getElementById('sphere-subcategory');
+        const visibilityFilter = document.getElementById('sphere-visibility');
+        
+        [subcategoryFilter, visibilityFilter].forEach(filter => {
+            if (filter) filter.addEventListener('change', filterSphereReports);
+        });
     }
     
-    // Filtrer les rapports Divert
-    function filterDivertReports() {
-        const visibilityFilter = document.getElementById('divert-visibility');
+    // Filtrer les rapports Pouvoir
+    function filterPouvoirReports() {
+        const subcategoryFilter = document.getElementById('pouvoir-subcategory');
+        const visibilityFilter = document.getElementById('pouvoir-visibility');
+        
+        const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
         const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
         
-        const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-        let divertReports = reports.filter(r => r.type === 'zone' || r.type === 'divers');
+        const reports = reportSaver.loadAllReports();
+        let pouvoirReports = reports.filter(r => r.category === 'pouvoir');
         
-        // Appliquer le filtre de visibilité
-        if (selectedVisibility !== 'all') {
-            divertReports = divertReports.filter(report => report.visibility === selectedVisibility);
+        // Appliquer les filtres
+        if (selectedSubcategory !== 'all') {
+            pouvoirReports = pouvoirReports.filter(report => report.subcategory === selectedSubcategory);
         }
         
-        const divertContainer = document.getElementById('divert-container');
-        if (!divertContainer) return;
+        if (selectedVisibility !== 'all') {
+            pouvoirReports = pouvoirReports.filter(report => report.visibility === selectedVisibility);
+        }
         
-        if (divertReports.length === 0) {
-            divertContainer.innerHTML = `
+        displayReports(pouvoirReports, 'pouvoir-container');
+        updateStats();
+    }
+    
+    // Filtrer les rapports Sphere
+    function filterSphereReports() {
+        const subcategoryFilter = document.getElementById('sphere-subcategory');
+        const visibilityFilter = document.getElementById('sphere-visibility');
+        
+        const selectedSubcategory = subcategoryFilter ? subcategoryFilter.value : 'all';
+        const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
+        
+        const reports = reportSaver.loadAllReports();
+        let sphereReports = reports.filter(r => r.category === 'sphere');
+        
+        // Appliquer les filtres
+        if (selectedSubcategory !== 'all') {
+            sphereReports = sphereReports.filter(report => report.subcategory === selectedSubcategory);
+        }
+        
+        if (selectedVisibility !== 'all') {
+            sphereReports = sphereReports.filter(report => report.visibility === selectedVisibility);
+        }
+        
+        displayReports(sphereReports, 'sphere-container');
+        updateStats();
+    }
+    
+    // Afficher les rapports
+    function displayReports(reports, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (reports.length === 0) {
+            const category = containerId.includes('pouvoir') ? 'Pouvoir' : 'Sphere';
+            container.innerHTML = `
                 <div class="no-reports">
-                    <div class="no-reports-icon">🌑</div>
-                    <h3>Aucun rapport divert disponible</h3>
-                    <p>Aucune observation n'a encore été archivée dans le sang</p>
+                    <div class="no-reports-icon">${category === 'Pouvoir' ? '⚡' : '🪐'}</div>
+                    <h3>Aucun rapport ${category} disponible</h3>
+                    <p>Les archives ${category.toLowerCase()} sont actuellement vides</p>
                 </div>
             `;
         } else {
-            divertContainer.innerHTML = divertReports.map(report => `
-                <div class="report-card divert-card">
+            container.innerHTML = reports.map(report => `
+                <div class="report-card ${report.category}-card">
                     <div class="report-header">
                         <h3>${report.title}</h3>
-                        <span class="report-type-badge">${getTypeLabel(report.type)}</span>
-                        <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
+                        <span class="report-type-badge">${getSubcategoryLabel(report.subcategory)}</span>
                     </div>
                     <div class="report-meta">
                         <span class="report-date">${new Date(report.date).toLocaleDateString('fr-FR')}</span>
                         <span class="report-location">${report.location || 'Non spécifié'}</span>
                     </div>
+                    <div class="report-category-info">
+                        <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
+                    </div>
+                    ${report.mediaPaths && report.mediaPaths.length > 0 ? `
+                        <div class="report-media">
+                            <strong>📎 Médias:</strong> ${report.mediaPaths.length} fichier(s)
+                        </div>
+                    ` : ''}
                     <div class="report-content">
                         ${report.objective ? `<p class="report-objective"><strong>Objectif:</strong> ${report.objective}</p>` : ''}
                         <p>${report.content.substring(0, 120)}...</p>
@@ -270,125 +334,46 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="report-actions">
                             <button onclick="viewReport(${report.id})" class="btn-view">📖 Voir</button>
                             <button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>
+                            ${report.mediaPaths && report.mediaPaths.length > 0 ? `
+                                <button onclick="viewMedia(${report.id})" class="btn-media">🖼️ Médias</button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
             `).join('');
         }
-        
-        // Mettre à jour les statistiques
-        updateMissionStats();
-    }
-    
-    // Filtrer les rapports Missions
-    function filterMissionReports() {
-        const visibilityFilter = document.getElementById('mission-visibility');
-        const selectedVisibility = visibilityFilter ? visibilityFilter.value : 'all';
-        
-        const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-        let missionReports = reports.filter(r => r.type === 'mission');
-        
-        // Appliquer le filtre de visibilité
-        if (selectedVisibility !== 'all') {
-            missionReports = missionReports.filter(report => report.visibility === selectedVisibility);
-        }
-        
-        const missionsContainer = document.getElementById('missions-container');
-        if (!missionsContainer) return;
-        
-        if (missionReports.length === 0) {
-            missionsContainer.innerHTML = `
-                <div class="no-reports">
-                    <div class="no-reports-icon">🩸</div>
-                    <h3>Aucun rapport de mission disponible</h3>
-                    <p>Les archives sanguinaires sont actuellement vides</p>
-                </div>
-            `;
-        } else {
-            missionsContainer.innerHTML = missionReports.map(report => `
-                <div class="report-card mission-card">
-                    <div class="report-header">
-                        <h3>${report.title}</h3>
-                        <span class="report-visibility-badge ${report.visibility}">${getVisibilityLabel(report.visibility)}</span>
-                    </div>
-                    <div class="report-meta">
-                        <span class="report-date">${new Date(report.date).toLocaleDateString('fr-FR')}</span>
-                        <span class="report-location">${report.location || 'Non spécifié'}</span>
-                    </div>
-                    <div class="report-content">
-                        <p>${report.content.substring(0, 150)}...</p>
-                    </div>
-                    <div class="report-footer">
-                        <span class="report-status">Statut: ${report.status || 'Complété'}</span>
-                        <div class="report-actions">
-                            <button onclick="viewReport(${report.id})" class="btn-view">📖 Voir</button>
-                            <button onclick="deleteReport(${report.id})" class="btn-delete">🗑️ Supprimer</button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-        
-        // Mettre à jour les statistiques
-        updateMissionStats();
     }
     
     // Chargement des rapports
     function loadReports() {
-        const missionsContainer = document.getElementById('missions-container');
-        const divertContainer = document.getElementById('divert-container');
-        
-        if (!missionsContainer && !divertContainer) return;
-        
-        try {
-            const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-            
-            // Trier par date décroissante
-            reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            // Générer l'affichage pour missions.html
-            if (missionsContainer) {
-                filterMissionReports(); // Utiliser la fonction de filtrage
-            }
-            
-            // Générer l'affichage pour divert.html
-            if (divertContainer) {
-                filterDivertReports(); // Utiliser la fonction de filtrage
-            }
-            
-            // Mettre à jour les statistiques
-            updateMissionStats();
-            
-        } catch (error) {
-            console.error('Erreur chargement rapports:', error);
-            if (missionsContainer) missionsContainer.innerHTML = '<p>Erreur lors du chargement des rapports.</p>';
-            if (divertContainer) divertContainer.innerHTML = '<p>Erreur lors du chargement des rapports.</p>';
+        if (window.location.pathname.includes('pouvoir.html')) {
+            filterPouvoirReports();
+        } else if (window.location.pathname.includes('sphere.html')) {
+            filterSphereReports();
         }
     }
     
     // Helper functions
-    function getTypeLabel(type) {
+    function getSubcategoryLabel(subcategory) {
         const labels = {
-            'zone': 'Rapport sur Zone',
-            'divers': 'Rapport Divers',
-            'mission': 'Mission'
+            'mission': 'Rapport de Mission',
+            'divert': 'Rapport Divert'
         };
-        return labels[type] || type;
+        return labels[subcategory] || subcategory;
     }
     
     function getVisibilityLabel(visibility) {
         const labels = {
-            'standard': 'Standard',
-            'power': 'Gerant Pouvoir',
-            'sphere': 'Gerant Sphere',
-            'moons': 'Lune'
+            'all': '👁️ Tout le monde',
+            'power': '⚡ Gerant Pouvoir',
+            'sphere': '🪐 Gerant Sphere',
+            'moons': '🌙 Lune'
         };
         return labels[visibility] || visibility;
     }
     
     // Affichage des notifications
     function showNotification(message, type = 'info') {
-        // Supprimer les notifications existantes
         const existingNotifications = document.querySelectorAll('.notification');
         existingNotifications.forEach(notif => notif.remove());
         
@@ -399,7 +384,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <button onclick="this.parentElement.remove()">×</button>
         `;
         
-        // Styles pour la notification
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -418,7 +402,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.body.appendChild(notification);
         
-        // Auto-suppression après 5 secondes
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.remove();
@@ -428,12 +411,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions globales
     window.viewReport = function(reportId) {
-        const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-        const report = reports.find(r => r.id === reportId);
+        const report = reportSaver.loadReport(reportId);
         
         if (report) {
             let content = `Rapport: ${report.title}\n\n`;
-            content += `Type: ${getTypeLabel(report.type)}\n`;
+            content += `Catégorie: ${report.category === 'pouvoir' ? 'Pouvoir' : 'Sphere'}\n`;
+            content += `Type: ${getSubcategoryLabel(report.subcategory)}\n`;
             content += `Date: ${new Date(report.date).toLocaleDateString('fr-FR')}\n`;
             content += `Localisation: ${report.location || 'Non spécifié'}\n`;
             content += `Visibilité: ${getVisibilityLabel(report.visibility)}\n`;
@@ -444,48 +427,180 @@ document.addEventListener('DOMContentLoaded', function() {
             
             content += `\nContenu:\n${report.content}`;
             
-            alert(content);
+            if (report.notes) {
+                content += `\n\nNotes supplémentaires:\n${report.notes}`;
+            }
+            
+            if (report.mediaPaths && report.mediaPaths.length > 0) {
+                content += `\n\n📎 Médias (${report.mediaPaths.length} fichier(s)):\n`;
+                report.mediaPaths.forEach(media => {
+                    content += `- ${media.originalName} (${media.type})\n`;
+                });
+            }
+            
+            // Créer une fenêtre modale pour afficher le rapport
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
+            
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.cssText = `
+                background: #1a1a1a;
+                padding: 2rem;
+                border-radius: 10px;
+                border: 2px solid #8b0000;
+                max-width: 600px;
+                max-height: 80vh;
+                overflow-y: auto;
+                color: white;
+            `;
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="color: #ff6b6b; margin: 0;">📖 Rapport Complet</h3>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+                </div>
+                <div style="white-space: pre-wrap; font-family: monospace; line-height: 1.4;">${content}</div>
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 0.5rem 1rem; background: #8b0000; color: white; border: none; border-radius: 5px; cursor: pointer;">Fermer</button>
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant à l'extérieur
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
     };
     
-    window.deleteReport = function(reportId) {
-        if (confirm('Supprimer ce rapport définitivement?')) {
-            const reports = JSON.parse(localStorage.getItem('sakai_reports') || '[]');
-            const filteredReports = reports.filter(r => r.id !== reportId);
+    window.viewMedia = function(reportId) {
+        const report = reportSaver.loadReport(reportId);
+        
+        if (report && report.mediaPaths && report.mediaPaths.length > 0) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.9);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+            `;
             
-            localStorage.setItem('sakai_reports', JSON.stringify(filteredReports));
-            loadReports();
-            showNotification('Rapport supprimé', 'success');
+            const modalContent = document.createElement('div');
+            modalContent.className = 'modal-content';
+            modalContent.style.cssText = `
+                background: #1a1a1a;
+                padding: 2rem;
+                border-radius: 10px;
+                border: 2px solid #8b0000;
+                max-width: 90vw;
+                max-height: 90vh;
+                overflow-y: auto;
+                color: white;
+            `;
+            
+            let mediaContent = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="color: #ff6b6b; margin: 0;">🖼️ Médias du Rapport</h3>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">×</button>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <strong>Rapport:</strong> ${report.title}
+                </div>
+            `;
+            
+            report.mediaPaths.forEach(media => {
+                const mediaData = localStorage.getItem(`media_${media.savedPath}`);
+                if (mediaData) {
+                    const mediaObj = JSON.parse(mediaData);
+                    if (mediaObj.data) {
+                        if (media.type.startsWith('image/')) {
+                            mediaContent += `
+                                <div style="margin-bottom: 2rem; text-align: center;">
+                                    <h4 style="color: #ff6b6b; margin-bottom: 0.5rem;">${media.originalName}</h4>
+                                    <img src="${mediaObj.data}" style="max-width: 100%; max-height: 400px; border: 1px solid #8b0000; border-radius: 5px;">
+                                </div>
+                            `;
+                        } else {
+                            mediaContent += `
+                                <div style="margin-bottom: 1rem; padding: 1rem; background: #2d2d2d; border-radius: 5px;">
+                                    <h4 style="color: #ff6b6b; margin: 0 0 0.5rem 0;">${media.originalName}</h4>
+                                    <p style="margin: 0; color: #ccc;">Type: ${media.type} | Taille: ${Math.round(media.size / 1024)} KB</p>
+                                    <p style="margin: 0.5rem 0 0 0;"><a href="${mediaObj.data}" download="${media.originalName}" style="color: #ff6b6b; text-decoration: none;">📥 Télécharger</a></p>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            });
+            
+            mediaContent += `
+                <div style="margin-top: 1rem; text-align: center;">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 0.5rem 1rem; background: #8b0000; color: white; border: none; border-radius: 5px; cursor: pointer;">Fermer</button>
+                </div>
+            `;
+            
+            modalContent.innerHTML = mediaContent;
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            
+            // Fermer en cliquant à l'extérieur
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
+    };
+    
+    window.deleteReport = async function(reportId) {
+        if (confirm('Supprimer ce rapport définitivement?')) {
+            const result = await reportSaver.deleteReport(reportId);
+            if (result.success) {
+                loadReports();
+                showNotification('Rapport supprimé', 'success');
+            } else {
+                showNotification('Erreur lors de la suppression: ' + result.error, 'error');
+            }
+        }
+    };
+    
+    // Export des rapports
+    window.exportReports = function() {
+        reportSaver.exportAllReports();
+        showNotification('Tous les rapports ont été exportés avec succès!', 'success');
     };
     
     // Initialisation
     setActiveNavLink();
     animateOnScroll();
     initReportForm();
-    initDivertFilters();
-    initMissionFilters();
-    
-    // Charger les rapports si on est sur la page des missions ou divert
-    if (window.location.pathname.includes('missions.html') || 
-        window.location.pathname.includes('divert.html')) {
-        loadReports();
-    }
-    
-    // Mettre la date du jour dans le formulaire nouveau rapport
-    if (window.location.pathname.includes('nouveau-rapport.html')) {
-        const dateInput = document.getElementById('report-date');
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.value = today;
-        }
-        
-        // Cacher le modal par défaut
-        const modal = document.getElementById('confirmation-modal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
+    initPouvoirFilters();
+    initSphereFilters();
+    loadReports();
 });
 
 // Styles CSS injectés
@@ -558,6 +673,13 @@ style.textContent = `
         white-space: nowrap;
     }
     
+    .report-category-info {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
     .report-visibility-badge {
         padding: 0.3rem 0.8rem;
         border-radius: 15px;
@@ -566,10 +688,18 @@ style.textContent = `
         white-space: nowrap;
     }
     
-    .report-visibility-badge.standard { background: #2d5a27; }
+    .report-visibility-badge.all { background: #2d5a27; }
     .report-visibility-badge.power { background: #5a4d27; }
     .report-visibility-badge.sphere { background: #8b4513; }
     .report-visibility-badge.moons { background: #8b0000; }
+    
+    .report-media {
+        padding: 0.5rem;
+        background: rgba(139, 0, 0, 0.1);
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        border-left: 3px solid #8b0000;
+    }
     
     .report-meta {
         display: flex;
@@ -617,7 +747,7 @@ style.textContent = `
         gap: 0.5rem;
     }
     
-    .btn-view, .btn-delete {
+    .btn-view, .btn-delete, .btn-media {
         padding: 0.4rem 0.8rem;
         border: none;
         border-radius: 5px;
@@ -636,7 +766,12 @@ style.textContent = `
         color: white;
     }
     
-    .btn-view:hover, .btn-delete:hover {
+    .btn-media {
+        background: #5a4d27;
+        color: white;
+    }
+    
+    .btn-view:hover, .btn-delete:hover, .btn-media:hover {
         transform: translateY(-2px);
         opacity: 0.9;
     }
@@ -710,11 +845,34 @@ style.textContent = `
         padding: 2rem;
     }
     
+    .file-saved-info {
+        background: rgba(139, 0, 0, 0.1);
+        padding: 1rem;
+        border-radius: 5px;
+        margin: 1rem 0;
+        border-left: 3px solid #8b0000;
+    }
+    
     .modal-actions {
         display: flex;
         gap: 1rem;
         margin-top: 1.5rem;
         justify-content: center;
+    }
+    
+    .pouvoir-grid, .sphere-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
     }
     
     @keyframes slideIn {

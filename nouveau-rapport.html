@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakai - Nouveau Rapport</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="logo">Archives de <span>Sakai</span></div>
+            <nav>
+                <ul>
+                    <li><a href="index.html" class="nav-link">Biographie</a></li>
+                    <li><a href="pouvoir.html" class="nav-link">Rapport Pouvoir</a></li>
+                    <li><a href="sphere.html" class="nav-link">Rapport Sphere</a></li>
+                    <li><a href="nouveau-rapport.html" class="nav-link btn-new-report active">Nouveau Rapport</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="new-report-section active">
+            <div class="form-header">
+                <h1>🩸 Nouveau Rapport Sanguinaire</h1>
+                <p class="form-subtitle">Archiver une observation dans le sang de l'éternité</p>
+            </div>
+
+            <form id="new-report-form" class="report-form">
+                <!-- Section Catégorisation -->
+                <div class="form-section">
+                    <h2>📋 Catégorisation</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="report-category">Catégorie principale *</label>
+                            <select id="report-category" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="pouvoir">Rapport Pouvoir</option>
+                                <option value="sphere">Rapport Sphere</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="report-subcategory">Sous-catégorie *</label>
+                            <select id="report-subcategory" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="mission">Rapport de Mission</option>
+                                <option value="divert">Rapport Divert</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section Identification -->
+                <div class="form-section">
+                    <h2>🆔 Identification</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="report-title">Titre du rapport *</label>
+                            <input type="text" id="report-title" placeholder="Ex: Observation des techniques d'entraînement..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="report-date">Date de l'observation *</label>
+                            <input type="date" id="report-date" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-location">Lieu/Localisation *</label>
+                        <input type="text" id="report-location" placeholder="Ex: Forêt des Murmures, région Nord..." required>
+                    </div>
+                </div>
+
+                <!-- Section Contenu -->
+                <div class="form-section">
+                    <h2>📝 Contenu du Rapport</h2>
+                    <div class="form-group">
+                        <label for="report-objective">Objectif de l'observation</label>
+                        <textarea id="report-objective" placeholder="Décrire l'objectif principal de cette observation..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-content">Rapport détaillé *</label>
+                        <textarea id="report-content" placeholder="Décrire méticuleusement l'observation, les événements, les analyses...
+
+Format recommandé:
+1. Contexte
+2. Déroulement  
+3. Observations clés
+4. Analyses
+5. Conclusions" required rows="12"></textarea>
+                    </div>
+                </div>
+
+                <!-- Section Classification -->
+                <div class="form-section">
+                    <h2>⚡ Classification</h2>
+                    <div class="form-group">
+                        <label for="report-visibility">Visibilité</label>
+                        <select id="report-visibility">
+                            <option value="all">👁️ Tout le monde</option>
+                            <option value="power">⚡ Gerant Pouvoir</option>
+                            <option value="sphere">🪐 Gerant Sphere</option>
+                            <option value="moons">🌙 Lune</option>
+                        </select>
+                        <small>Par défaut: Visible par tous les démons</small>
+                    </div>
+                </div>
+
+                <!-- Section Preuves -->
+                <div class="form-section">
+                    <h2>🖼️ Preuves Sanguinaires</h2>
+                    <div class="form-group">
+                        <label for="report-evidence">Preuves visuelles (images, vidéos, documents)</label>
+                        <input type="file" id="report-evidence" accept="image/*, video/*, .pdf, .doc, .docx, .txt" multiple>
+                        <small>Formats acceptés: JPG, PNG, GIF, MP4, PDF, DOC, TXT. Maximum 10 fichiers.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-notes">Notes supplémentaires</label>
+                        <textarea id="report-notes" placeholder="Informations complémentaires, hypothèses, recommandations..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="form-actions">
+                    <button type="button" id="btn-draft" class="btn btn-secondary">Sauvegarder Brouillon</button>
+                    <button type="submit" id="btn-submit" class="btn btn-primary">
+                        <span class="btn-icon">🩸</span>
+                        Sceller le Rapport dans le Sang
+                    </button>
+                    <button type="button" id="btn-export" class="btn btn-secondary" onclick="exportReports()">
+                        📤 Exporter Tous les Rapports
+                    </button>
+                </div>
+            </form>
+
+            <!-- Modal de confirmation -->
+            <div id="confirmation-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>🩸 Rapport Scellé avec Succès!</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Votre rapport a été archivé dans les Archives de Sang.</p>
+                        
+                        <div class="file-saved-info">
+                            <p><strong>📁 Fichier JSON:</strong> Téléchargé automatiquement</p>
+                            <p><strong>💾 Stockage:</strong> Sauvegardé dans le navigateur</p>
+                            <p><strong>📍 Chemin simulé:</strong> <span id="saved-file-path">data/reports/</span></p>
+                        </div>
+
+                        <div class="download-info">
+                            <p>✅ <strong>Le fichier .json a été téléchargé dans ton dossier "Téléchargements"</strong></p>
+                            <p>📱 <strong>Tu peux le déplacer manuellement dans ton dossier "data/reports/"</strong></p>
+                        </div>
+
+                        <div class="next-steps">
+                            <h4>Prochaines étapes:</h4>
+                            <ul>
+                                <li>📂 <strong>Crée le dossier</strong> <code>data/reports/</code> dans ton projet</li>
+                                <li>📄 <strong>Déplace le fichier .json</strong> téléchargé dans ce dossier</li>
+                                <li>🔄 <strong>Actualise la page</strong> des rapports pour voir le nouveau rapport</li>
+                            </ul>
+                        </div>
+
+                        <div class="modal-actions">
+                            <button id="btn-new-report" class="btn btn-primary">Créer un nouveau rapport</button>
+                            <button id="btn-view-reports" class="btn btn-secondary">Voir les rapports</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Archives de Sakai</h3>
+                <p>Serviteur de l'ordre démoniaque</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <ul>
+                    <li><a href="index.html">Biographie</a></li>
+                    <li><a href="pouvoir.html">Rapport Pouvoir</a></li>
+                    <li><a href="sphere.html">Rapport Sphere</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Confidentialité</h3>
+                <p>⚠️ Documents classés confidentiels</p>
+                <p>Accès strictement réservé aux Démons</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Archives de Sakai - Tous droits réservés</p>
+        </div>
+    </footer>
+
+    <!-- IMPORTANT: Charger saveReport.js AVANT main.js -->
+    <script src="js/saveReport.js"></script>
+    <script src="js/main.js"></script>
+
+    <style>
+        .file-saved-info {
+            background: rgba(139, 0, 0, 0.1);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border-left: 3px solid #8b0000;
+        }
+
+        .file-saved-info p {
+            margin: 0.5rem 0;
+        }
+
+        .download-info {
+            background: rgba(45, 90, 39, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border-left: 3px solid #2d5a27;
+        }
+
+        .download-info p {
+            margin: 0.5rem 0;
+            color: #aaffaa;
+        }
+
+        .next-steps {
+            background: rgba(90, 77, 39, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+            border-left: 3px solid #5a4d27;
+        }
+
+        .next-steps h4 {
+            color: #ffd700;
+            margin-bottom: 0.5rem;
+        }
+
+        .next-steps ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .next-steps li {
+            margin: 0.3rem 0;
+            color: #ffd700;
+        }
+
+        .next-steps code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #ff6b6b;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-body h3 {
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .modal-body p {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+    </style>
+</body>
+</html>
